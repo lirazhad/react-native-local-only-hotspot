@@ -3,6 +3,7 @@ package com.reactlibrarylocalhotspot;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Handler;
+import java.lang.reflect.Method;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -49,7 +50,7 @@ public class LocalOnlyHotspotModule extends ReactContextBaseJavaModule {
                 @Override
                 public void onFailed(int reason) {
                     super.onFailed(reason);
-                    onFailed.invoke(reason);
+                    onFailed.invoke(false);
                 }
             },new Handler());
         }
@@ -60,7 +61,7 @@ public class LocalOnlyHotspotModule extends ReactContextBaseJavaModule {
         if (mReservation != null){
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 mReservation.close();
-                onStop.invoke("Stopped");
+                onStop.invoke(true);
             }
         }
     }
@@ -72,10 +73,12 @@ public class LocalOnlyHotspotModule extends ReactContextBaseJavaModule {
 
     private WritableMap config(){
         WritableMap resultData = new WritableNativeMap();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && mReservation!=null) {
-            resultData.putString("ssid",mReservation.getWifiConfiguration().SSID);
-            resultData.putString("secret",mReservation.getWifiConfiguration().preSharedKey);
-        }
+        try {
+           Method method = wifiManager.getClass().getMethod("getWifiApState");
+           int tmp = ((Integer) method.invoke(wifiManager));
+            resultData.putString("hotspotEnabled",String.valueOf(tmp));
+                }catch (Exception e){}
+
         return resultData;
     }
 }
